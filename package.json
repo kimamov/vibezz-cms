@@ -1,0 +1,15 @@
+{
+  "name": "vibezz-cms",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:admin": "npm run dev -w @vibezz/admin",
+    "dev:web": "npm run dev -w @vibezz/web",
+    "build:admin": "npm run build -w @vibezz/admin",
+    "build:web": "npm run build -w @vibezz/web"
+  }
+}
