@@ -45,6 +45,16 @@ func (h *ContentTypeHandler) List(c *gin.Context) {
 		return
 	}
 
+	if c.Query("exclude_slug") == "page" {
+		var filtered []content.ContentType
+		for _, t := range types {
+			if t.Slug != "page" {
+				filtered = append(filtered, t)
+			}
+		}
+		types = filtered
+	}
+
 	c.JSON(http.StatusOK, types)
 }
 

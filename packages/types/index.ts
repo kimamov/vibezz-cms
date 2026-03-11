@@ -42,6 +42,7 @@ export type FieldType =
   | 'url'
   | 'email'
   | 'json'
+  | 'blocks'
 
 export interface Entry {
   id: string
@@ -88,6 +89,73 @@ export interface MediaFile {
   storage_path: string
   uploader_id: string
   created_at: string
+}
+
+export interface MediaFieldValue {
+  id: string
+  filename: string
+  mime_type: string
+  size: number
+  url: string
+}
+
+export function isMediaField(value: unknown): value is MediaFieldValue {
+  return typeof value === 'object' && value !== null && 'url' in value && 'mime_type' in value
+}
+
+export type BlockType = 'heading' | 'text' | 'image' | 'quote' | 'divider' | 'code' | (string & {})
+
+export interface BlockConfigField {
+  name: string
+  slug: string
+  type: string
+  required: boolean
+}
+
+export interface BlockTypeDefinition {
+  slug: string
+  label: string
+  icon: string
+  config_fields?: BlockConfigField[]
+  default_data: Record<string, unknown>
+}
+
+export interface ContentBlock {
+  id: string
+  type: string
+  data: Record<string, unknown>
+}
+
+export interface HeadingBlockData {
+  text: string
+  level: 1 | 2 | 3 | 4 | 5 | 6
+}
+
+export interface TextBlockData {
+  content: string
+}
+
+export interface ImageBlockData {
+  media_id?: string
+  media?: MediaFieldValue
+  caption?: string
+  alt?: string
+}
+
+export interface QuoteBlockData {
+  text: string
+  attribution?: string
+}
+
+export interface CodeBlockData {
+  code: string
+  language?: string
+}
+
+export function isBlockArray(value: unknown): value is ContentBlock[] {
+  return Array.isArray(value) && value.every(
+    item => typeof item === 'object' && item !== null && 'type' in item && 'data' in item,
+  )
 }
 
 export interface ApiError {

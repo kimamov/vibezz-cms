@@ -62,6 +62,7 @@ type CreateEntryInput struct {
 	Title         string                 `json:"title"`
 	Slug          string                 `json:"slug"`
 	ParentID      *uuid.UUID             `json:"parent_id,omitempty"`
+	PathPrefix    *string                `json:"-"` // optional path prefix for plugin entries (e.g. "/news")
 	Fields        map[string]interface{} `json:"fields"`
 	AuthorID      uuid.UUID              `json:"author_id"`
 }
@@ -84,6 +85,12 @@ type NavigationItem struct {
 	Slug     string           `json:"slug"`
 	Path     string           `json:"path"`
 	Children []NavigationItem `json:"children,omitempty"`
+}
+
+// PageNode is a page entry with nested children for the admin page tree.
+type PageNode struct {
+	Entry
+	Children []PageNode `json:"children,omitempty"`
 }
 
 type MediaFile struct {

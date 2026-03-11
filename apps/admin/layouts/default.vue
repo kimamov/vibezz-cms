@@ -4,6 +4,7 @@ const route = useRoute()
 
 const navigation = [
   { label: 'Dashboard', to: '/', icon: 'i-heroicons-home' },
+  { label: 'Pages', to: '/pages', icon: 'i-heroicons-document-text' },
   { label: 'Content Types', to: '/content-types', icon: 'i-heroicons-rectangle-stack' },
   { label: 'Entries', to: '/entries', icon: 'i-heroicons-document-text' },
   { label: 'Media', to: '/media', icon: 'i-heroicons-photo' },

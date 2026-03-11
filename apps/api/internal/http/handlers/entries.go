@@ -19,7 +19,7 @@ func NewEntryHandler(service *content.EntryService) *EntryHandler {
 type createEntryRequest struct {
 	ContentTypeID uuid.UUID              `json:"content_type_id" binding:"required"`
 	Title         string                 `json:"title" binding:"required"`
-	Slug          string                 `json:"slug" binding:"required"`
+	Slug          string                 `json:"slug"`
 	ParentID      *uuid.UUID             `json:"parent_id"`
 	Fields        map[string]interface{} `json:"fields"`
 }

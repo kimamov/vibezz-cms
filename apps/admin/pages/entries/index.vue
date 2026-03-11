@@ -2,13 +2,14 @@
 import type { Entry, ContentType } from '@vibezz/types'
 
 const { apiFetch } = useApi()
+const toast = useToast()
 
 const { data: entries, refresh } = await useAsyncData('entries', () =>
   apiFetch<Entry[]>('/api/admin/entries'),
 )
 
 const { data: contentTypes } = await useAsyncData('entry-content-types', () =>
-  apiFetch<ContentType[]>('/api/admin/content-types'),
+  apiFetch<ContentType[]>('/api/admin/content-types?exclude_slug=page'),
 )
 
 const showCreate = ref(false)
@@ -25,36 +26,56 @@ const contentTypeOptions = computed(() =>
 )
 
 async function create() {
-  await apiFetch('/api/admin/entries', {
-    method: 'POST',
-    body: JSON.stringify({
-      content_type_id: newContentTypeId.value,
-      title: newTitle.value,
-      slug: newSlug.value,
-      fields: {},
-    }),
-  })
-  newTitle.value = ''
-  newSlug.value = ''
-  newContentTypeId.value = ''
-  showCreate.value = false
-  refresh()
+  try {
+    await apiFetch('/api/admin/entries', {
+      method: 'POST',
+      body: JSON.stringify({
+        content_type_id: newContentTypeId.value,
+        title: newTitle.value,
+        slug: newSlug.value,
+        fields: {},
+      }),
+    })
+    newTitle.value = ''
+    newSlug.value = ''
+    newContentTypeId.value = ''
+    showCreate.value = false
+    refresh()
+    toast.add({ title: 'Entry created', icon: 'i-heroicons-check-circle', color: 'green' })
+  } catch (e: any) {
+    toast.add({ title: 'Failed to create entry', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
+  }
 }
 
 async function publish(id: string) {
-  await apiFetch(`/api/admin/entries/${id}/publish`, { method: 'POST' })
-  refresh()
+  try {
+    await apiFetch(`/api/admin/entries/${id}/publish`, { method: 'POST' })
+    refresh()
+    toast.add({ title: 'Entry published', icon: 'i-heroicons-check-circle', color: 'green' })
+  } catch (e: any) {
+    toast.add({ title: 'Failed to publish', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
+  }
 }
 
 async function unpublish(id: string) {
-  await apiFetch(`/api/admin/entries/${id}/unpublish`, { method: 'POST' })
-  refresh()
+  try {
+    await apiFetch(`/api/admin/entries/${id}/unpublish`, { method: 'POST' })
+    refresh()
+    toast.add({ title: 'Entry unpublished', icon: 'i-heroicons-check-circle', color: 'yellow' })
+  } catch (e: any) {
+    toast.add({ title: 'Failed to unpublish', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
+  }
 }
 
 async function remove(id: string) {
   if (!confirm('Delete this entry?')) return
-  await apiFetch(`/api/admin/entries/${id}`, { method: 'DELETE' })
-  refresh()
+  try {
+    await apiFetch(`/api/admin/entries/${id}`, { method: 'DELETE' })
+    refresh()
+    toast.add({ title: 'Entry deleted', icon: 'i-heroicons-check-circle', color: 'green' })
+  } catch (e: any) {
+    toast.add({ title: 'Failed to delete', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
+  }
 }
 </script>
 
@@ -86,8 +107,8 @@ async function remove(id: string) {
           <UFormGroup label="Title">
             <UInput v-model="newTitle" placeholder="My First Post" required />
           </UFormGroup>
-          <UFormGroup label="Slug">
-            <UInput v-model="newSlug" placeholder="my-first-post" required />
+          <UFormGroup label="Slug" hint="Leave empty for root page (/)">
+            <UInput v-model="newSlug" placeholder="my-first-post" />
           </UFormGroup>
           <div class="flex justify-end gap-2">
             <UButton variant="ghost" @click="showCreate = false">Cancel</UButton>

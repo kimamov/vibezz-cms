@@ -3,6 +3,7 @@ import type { ContentType, FieldDefinition } from '@vibezz/types'
 
 const route = useRoute()
 const { apiFetch } = useApi()
+const toast = useToast()
 
 const { data: contentType, refresh } = await useAsyncData(`content-type-${route.params.id}`, () =>
   apiFetch<ContentType>(`/api/admin/content-types/${route.params.id}`),
@@ -17,6 +18,7 @@ const fieldTypes = [
   { value: 'date', label: 'Date' },
   { value: 'select', label: 'Select' },
   { value: 'media', label: 'Media' },
+  { value: 'blocks', label: 'Blocks (structured content)' },
   { value: 'url', label: 'URL' },
   { value: 'email', label: 'Email' },
   { value: 'json', label: 'JSON' },
@@ -50,17 +52,21 @@ async function addField() {
     },
   ]
 
-  await apiFetch(`/api/admin/content-types/${route.params.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ fields }),
-  })
-
-  newFieldName.value = ''
-  newFieldSlug.value = ''
-  newFieldType.value = 'text'
-  newFieldRequired.value = false
-  showAddField.value = false
-  refresh()
+  try {
+    await apiFetch(`/api/admin/content-types/${route.params.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ fields }),
+    })
+    newFieldName.value = ''
+    newFieldSlug.value = ''
+    newFieldType.value = 'text'
+    newFieldRequired.value = false
+    showAddField.value = false
+    refresh()
+    toast.add({ title: 'Field added', icon: 'i-heroicons-check-circle', color: 'green' })
+  } catch (e: any) {
+    toast.add({ title: 'Failed to add field', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
+  }
 }
 
 async function removeField(slug: string) {
@@ -75,12 +81,16 @@ async function removeField(slug: string) {
       required: f.required,
     }))
 
-  await apiFetch(`/api/admin/content-types/${route.params.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ fields }),
-  })
-
-  refresh()
+  try {
+    await apiFetch(`/api/admin/content-types/${route.params.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ fields }),
+    })
+    refresh()
+    toast.add({ title: 'Field removed', icon: 'i-heroicons-check-circle', color: 'green' })
+  } catch (e: any) {
+    toast.add({ title: 'Failed to remove field', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
+  }
 }
 </script>
 

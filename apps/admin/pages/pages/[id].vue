@@ -5,14 +5,17 @@ const route = useRoute()
 const { apiFetch } = useApi()
 const toast = useToast()
 
-const { data: entry, refresh } = await useAsyncData(`entry-${route.params.id}`, () =>
-  apiFetch<Entry>(`/api/admin/entries/${route.params.id}`),
+interface PageResponse {
+  page: Entry
+  content_type: ContentType
+}
+
+const { data: response, refresh } = await useAsyncData(`page-${route.params.id}`, () =>
+  apiFetch<PageResponse>(`/api/admin/pages/${route.params.id}`),
 )
 
-const { data: contentType } = await useAsyncData(`entry-ct-${route.params.id}`, async () => {
-  if (!entry.value) return null
-  return apiFetch<ContentType>(`/api/admin/content-types/${entry.value.content_type_id}`)
-})
+const entry = computed(() => response.value?.page ?? null)
+const contentType = computed(() => response.value?.content_type ?? null)
 
 const title = ref('')
 const slug = ref('')
@@ -30,7 +33,7 @@ watch(entry, (val) => {
 async function save() {
   saving.value = true
   try {
-    await apiFetch(`/api/admin/entries/${route.params.id}`, {
+    await apiFetch(`/api/admin/pages/${route.params.id}`, {
       method: 'PATCH',
       body: JSON.stringify({
         title: title.value,
@@ -49,9 +52,9 @@ async function save() {
 
 async function publish() {
   try {
-    await apiFetch(`/api/admin/entries/${route.params.id}/publish`, { method: 'POST' })
+    await apiFetch(`/api/admin/pages/${route.params.id}/publish`, { method: 'POST' })
     refresh()
-    toast.add({ title: 'Entry published', icon: 'i-heroicons-check-circle', color: 'green' })
+    toast.add({ title: 'Page published', icon: 'i-heroicons-check-circle', color: 'green' })
   } catch (e: any) {
     toast.add({ title: 'Failed to publish', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
   }
@@ -59,9 +62,9 @@ async function publish() {
 
 async function unpublish() {
   try {
-    await apiFetch(`/api/admin/entries/${route.params.id}/unpublish`, { method: 'POST' })
+    await apiFetch(`/api/admin/pages/${route.params.id}/unpublish`, { method: 'POST' })
     refresh()
-    toast.add({ title: 'Entry unpublished', icon: 'i-heroicons-check-circle', color: 'yellow' })
+    toast.add({ title: 'Page unpublished', icon: 'i-heroicons-check-circle', color: 'yellow' })
   } catch (e: any) {
     toast.add({ title: 'Failed to unpublish', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
   }
@@ -72,7 +75,7 @@ async function unpublish() {
   <div v-if="entry">
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-4">
-        <UButton to="/entries" variant="ghost" icon="i-heroicons-arrow-left" />
+        <UButton to="/pages" variant="ghost" icon="i-heroicons-arrow-left" />
         <div>
           <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ entry.title }}</h2>
           <p class="text-sm text-gray-500">{{ entry.path }}</p>
@@ -118,9 +121,9 @@ async function unpublish() {
         </div>
       </UCard>
 
-      <UCard v-if="contentType?.fields.length">
+      <UCard v-if="contentType?.fields?.length">
         <template #header>
-          <h3 class="text-lg font-semibold">Fields</h3>
+          <h3 class="text-lg font-semibold">Content</h3>
         </template>
         <div class="space-y-4">
           <UFormGroup
@@ -129,8 +132,16 @@ async function unpublish() {
             :label="field.name"
             :required="field.required"
           >
+            <MediaPicker
+              v-if="field.type === 'media'"
+              v-model="(fields[field.slug] as string)"
+            />
+            <BlockEditor
+              v-else-if="field.type === 'blocks'"
+              v-model="(fields[field.slug] as any[])"
+            />
             <UInput
-              v-if="field.type === 'text' || field.type === 'url' || field.type === 'email'"
+              v-else-if="field.type === 'text' || field.type === 'url' || field.type === 'email'"
               v-model="(fields[field.slug] as string)"
               :type="field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : 'text'"
               :required="field.required"
@@ -152,14 +163,6 @@ async function unpublish() {
               v-model="(fields[field.slug] as string)"
               type="date"
               :required="field.required"
-            />
-            <MediaPicker
-              v-else-if="field.type === 'media'"
-              v-model="(fields[field.slug] as string)"
-            />
-            <BlockEditor
-              v-else-if="field.type === 'blocks'"
-              v-model="(fields[field.slug] as any[])"
             />
             <UCheckbox
               v-else-if="field.type === 'boolean'"

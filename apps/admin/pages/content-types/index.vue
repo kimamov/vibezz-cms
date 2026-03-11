@@ -2,9 +2,10 @@
 import type { ContentType } from '@vibezz/types'
 
 const { apiFetch } = useApi()
+const toast = useToast()
 
 const { data: contentTypes, refresh } = await useAsyncData('content-types', () =>
-  apiFetch<ContentType[]>('/api/admin/content-types'),
+  apiFetch<ContentType[]>('/api/admin/content-types?exclude_slug=page'),
 )
 
 const showCreate = ref(false)
@@ -16,24 +17,34 @@ watch(newName, (val) => {
 })
 
 async function create() {
-  await apiFetch('/api/admin/content-types', {
-    method: 'POST',
-    body: JSON.stringify({
-      name: newName.value,
-      slug: newSlug.value,
-      fields: [],
-    }),
-  })
-  newName.value = ''
-  newSlug.value = ''
-  showCreate.value = false
-  refresh()
+  try {
+    await apiFetch('/api/admin/content-types', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: newName.value,
+        slug: newSlug.value,
+        fields: [],
+      }),
+    })
+    newName.value = ''
+    newSlug.value = ''
+    showCreate.value = false
+    refresh()
+    toast.add({ title: 'Content type created', icon: 'i-heroicons-check-circle', color: 'green' })
+  } catch (e: any) {
+    toast.add({ title: 'Failed to create', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
+  }
 }
 
 async function remove(id: string) {
   if (!confirm('Delete this content type? All its entries will also be removed.')) return
-  await apiFetch(`/api/admin/content-types/${id}`, { method: 'DELETE' })
-  refresh()
+  try {
+    await apiFetch(`/api/admin/content-types/${id}`, { method: 'DELETE' })
+    refresh()
+    toast.add({ title: 'Content type deleted', icon: 'i-heroicons-check-circle', color: 'green' })
+  } catch (e: any) {
+    toast.add({ title: 'Failed to delete', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
+  }
 }
 </script>
 

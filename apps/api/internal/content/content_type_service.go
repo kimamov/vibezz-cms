@@ -75,6 +75,22 @@ func (s *ContentTypeService) List(ctx context.Context) ([]ContentType, error) {
 	return types, nil
 }
 
+func (s *ContentTypeService) GetBySlug(ctx context.Context, slug string) (*ContentType, error) {
+	row := s.pool.QueryRow(ctx,
+		`SELECT id, name, slug, fields, created_at, updated_at
+		 FROM content_types WHERE slug = $1`, slug)
+
+	var ct ContentType
+	var fieldsJSON []byte
+	if err := row.Scan(&ct.ID, &ct.Name, &ct.Slug, &fieldsJSON, &ct.CreatedAt, &ct.UpdatedAt); err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(fieldsJSON, &ct.Fields); err != nil {
+		ct.Fields = []FieldDefinition{}
+	}
+	return &ct, nil
+}
+
 func (s *ContentTypeService) GetByID(ctx context.Context, id uuid.UUID) (*ContentType, error) {
 	row := s.pool.QueryRow(ctx,
 		`SELECT id, name, slug, fields, created_at, updated_at

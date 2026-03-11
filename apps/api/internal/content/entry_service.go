@@ -19,24 +19,53 @@ func NewEntryService(pool *pgxpool.Pool) *EntryService {
 	return &EntryService{pool: pool}
 }
 
+func sanitizeSlug(slug string) string {
+	slug = strings.Trim(slug, "/")
+	slug = strings.TrimSpace(slug)
+	return slug
+}
+
 func (s *EntryService) buildPath(ctx context.Context, parentID *uuid.UUID, slug string) string {
+	slug = sanitizeSlug(slug)
+
 	if parentID == nil {
+		if slug == "" {
+			return "/"
+		}
 		return "/" + slug
 	}
 
 	var parentPath string
 	err := s.pool.QueryRow(ctx, `SELECT path FROM entries WHERE id = $1`, *parentID).Scan(&parentPath)
 	if err != nil {
+		if slug == "" {
+			return "/"
+		}
 		return "/" + slug
 	}
 
-	return strings.TrimRight(parentPath, "/") + "/" + slug
+	parentPath = strings.TrimRight(parentPath, "/")
+	if slug == "" {
+		return parentPath + "/"
+	}
+	return parentPath + "/" + slug
 }
 
 func (s *EntryService) Create(ctx context.Context, input CreateEntryInput) (*Entry, error) {
 	id := uuid.New()
 	now := time.Now()
-	path := s.buildPath(ctx, input.ParentID, input.Slug)
+	input.Slug = sanitizeSlug(input.Slug)
+	var path string
+	if input.PathPrefix != nil {
+		prefix := strings.TrimRight(*input.PathPrefix, "/")
+		if input.Slug == "" {
+			path = prefix
+		} else {
+			path = prefix + "/" + input.Slug
+		}
+	} else {
+		path = s.buildPath(ctx, input.ParentID, input.Slug)
+	}
 
 	fieldsJSON, err := json.Marshal(input.Fields)
 	if err != nil {
@@ -87,6 +116,18 @@ func (s *EntryService) GetByID(ctx context.Context, id uuid.UUID) (*Entry, error
 func (s *EntryService) GetByPath(ctx context.Context, path string) (*Entry, error) {
 	row := s.pool.QueryRow(ctx,
 		fmt.Sprintf(`SELECT %s FROM entries WHERE path = $1 AND status = 'published'`, entryColumns), path)
+	return s.scanEntry(row.Scan)
+}
+
+func (s *EntryService) GetByPathAndContentType(ctx context.Context, path string, contentTypeID uuid.UUID) (*Entry, error) {
+	row := s.pool.QueryRow(ctx,
+		fmt.Sprintf(`SELECT %s FROM entries WHERE path = $1 AND content_type_id = $2 AND status = 'published'`, entryColumns), path, contentTypeID)
+	return s.scanEntry(row.Scan)
+}
+
+func (s *EntryService) GetByContentTypeAndSlug(ctx context.Context, contentTypeID uuid.UUID, slug string) (*Entry, error) {
+	row := s.pool.QueryRow(ctx,
+		fmt.Sprintf(`SELECT %s FROM entries WHERE content_type_id = $1 AND slug = $2 AND status = 'published'`, entryColumns), contentTypeID, slug)
 	return s.scanEntry(row.Scan)
 }
 
@@ -142,7 +183,7 @@ func (s *EntryService) Update(ctx context.Context, id uuid.UUID, input UpdateEnt
 		entry.Title = *input.Title
 	}
 	if input.Slug != nil {
-		entry.Slug = *input.Slug
+		entry.Slug = sanitizeSlug(*input.Slug)
 		entry.Path = s.buildPath(ctx, entry.ParentID, entry.Slug)
 	}
 	if input.Fields != nil {

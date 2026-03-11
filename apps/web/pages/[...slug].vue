@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { isMediaField, isBlockArray } from '@vibezz/types'
+
 const route = useRoute()
 const { fetchPage } = useCms()
 
@@ -30,7 +32,22 @@ useHead({
         :key="String(key)"
         class="mb-4"
       >
-        <div v-if="typeof value === 'string'" class="prose dark:prose-invert max-w-none" v-html="value" />
+        <BlockRenderer v-if="isBlockArray(value)" :blocks="value" />
+        <img
+          v-else-if="isMediaField(value) && value.mime_type.startsWith('image/')"
+          :src="value.url"
+          :alt="value.filename"
+          class="max-w-full rounded-lg"
+        />
+        <a
+          v-else-if="isMediaField(value)"
+          :href="value.url"
+          target="_blank"
+          class="text-primary hover:underline"
+        >
+          {{ value.filename }}
+        </a>
+        <div v-else-if="typeof value === 'string'" class="prose dark:prose-invert max-w-none" v-html="value" />
         <p v-else>{{ value }}</p>
       </div>
     </div>

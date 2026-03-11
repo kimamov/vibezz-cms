@@ -3,6 +3,7 @@ import type { MediaFile } from '@vibezz/types'
 
 const { apiFetch } = useApi()
 const config = useRuntimeConfig()
+const toast = useToast()
 
 const { data: files, refresh } = await useAsyncData('media', () =>
   apiFetch<MediaFile[]>('/api/admin/media'),
@@ -30,6 +31,9 @@ async function handleUpload(event: Event) {
       })
     }
     refresh()
+    toast.add({ title: `${input.files.length} file(s) uploaded`, icon: 'i-heroicons-check-circle', color: 'green' })
+  } catch (e: any) {
+    toast.add({ title: 'Upload failed', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
   } finally {
     uploading.value = false
     input.value = ''
@@ -38,8 +42,13 @@ async function handleUpload(event: Event) {
 
 async function remove(id: string) {
   if (!confirm('Delete this file?')) return
-  await apiFetch(`/api/admin/media/${id}`, { method: 'DELETE' })
-  refresh()
+  try {
+    await apiFetch(`/api/admin/media/${id}`, { method: 'DELETE' })
+    refresh()
+    toast.add({ title: 'File deleted', icon: 'i-heroicons-check-circle', color: 'green' })
+  } catch (e: any) {
+    toast.add({ title: 'Failed to delete', description: e.message, icon: 'i-heroicons-x-circle', color: 'red' })
+  }
 }
 
 function mediaUrl(id: string) {

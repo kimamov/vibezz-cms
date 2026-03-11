@@ -4,7 +4,7 @@ import type { Entry, ContentType } from '@vibezz/types'
 const { apiFetch } = useApi()
 
 const { data: contentTypes } = await useAsyncData('dashboard-types', () =>
-  apiFetch<ContentType[]>('/api/admin/content-types'),
+  apiFetch<ContentType[]>('/api/admin/content-types?exclude_slug=page'),
 )
 
 const { data: recentEntries } = await useAsyncData('dashboard-entries', () =>

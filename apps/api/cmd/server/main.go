@@ -51,6 +51,10 @@ func main() {
 		log.Warn().Err(err).Msg("could not ensure admin user exists")
 	}
 
+	if err := content.SeedDefaults(ctx, pool); err != nil {
+		log.Warn().Err(err).Msg("could not seed default content types")
+	}
+
 	r := router.NewRouter(cfg, pool)
 
 	srv := &http.Server{

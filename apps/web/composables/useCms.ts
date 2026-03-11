@@ -5,6 +5,16 @@ export function useCms() {
 
   async function fetchPage(path: string): Promise<Entry | null> {
     try {
+      const response = await fetch(`${config.public.apiBase}/api/public/pages${path}`)
+      if (!response.ok) return null
+      return response.json()
+    } catch {
+      return null
+    }
+  }
+
+  async function fetchRoute(path: string): Promise<Entry | null> {
+    try {
       const response = await fetch(`${config.public.apiBase}/api/public/routes${path}`)
       if (!response.ok) return null
       return response.json()
@@ -27,5 +37,5 @@ export function useCms() {
     return `${config.public.apiBase}/api/public/media/${id}`
   }
 
-  return { fetchPage, fetchNavigation, mediaUrl }
+  return { fetchPage, fetchRoute, fetchNavigation, mediaUrl }
 }
