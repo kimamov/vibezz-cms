@@ -49,12 +49,13 @@ func (p *Plugin) Register(deps *plugin.Deps) {
 	deps.Public.GET("/news/:slug", h.GetBySlugPublic)
 
 	deps.RegisterBlockType(plugin.BlockTypeDefinition{
-		Slug:  blockTypeNewsList,
-		Label: "News List",
-		Icon:  "i-heroicons-newspaper",
-		ConfigFields: []plugin.BlockConfigField{
-			{Name: "Limit", Slug: "limit", Type: "number", Required: false},
-			{Name: "Featured only", Slug: "featured_only", Type: "boolean", Required: false},
+		Slug:     blockTypeNewsList,
+		Label:    "News List",
+		Icon:     "newspaper",
+		Category: "content",
+		Fields: []plugin.BlockFieldDefinition{
+			{Name: "limit", Type: "number", Label: "Limit", Default: float64(5)},
+			{Name: "featured_only", Type: "boolean", Label: "Featured Only", Default: false},
 		},
 		DefaultData: map[string]interface{}{
 			"limit":         float64(5),

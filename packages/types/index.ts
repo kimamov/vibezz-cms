@@ -112,11 +112,24 @@ export interface BlockConfigField {
   required: boolean
 }
 
+export interface BlockFieldDefinition {
+  name: string
+  type: string
+  label: string
+  required?: boolean
+  default?: unknown
+  options?: unknown
+}
+
 export interface BlockTypeDefinition {
   slug: string
   label: string
   icon: string
+  category?: string
+  description?: string
+  isContainer?: boolean
   config_fields?: BlockConfigField[]
+  fields?: BlockFieldDefinition[]
   default_data: Record<string, unknown>
 }
 
@@ -124,6 +137,38 @@ export interface ContentBlock {
   id: string
   type: string
   data: Record<string, unknown>
+  children?: ContentBlock[]
+}
+
+export interface ContainerBlockData {
+  layout: 'flex' | 'grid' | 'row' | 'column' | 'stack'
+  gap: string
+  padding: string
+  background: string
+  maxWidth: string
+}
+
+export interface GridBlockData {
+  columns: number
+  columnGap: string
+  rowGap: string
+  mobileColumns: number
+  tabletColumns: number
+  desktopColumns: number
+}
+
+export interface SectionBlockData {
+  background: string
+  paddingY: string
+  paddingX: string
+  minHeight: string
+  backgroundImage: string
+  backgroundSize: 'cover' | 'contain' | 'auto'
+}
+
+export interface ColumnBlockData {
+  width: string
+  padding: string
 }
 
 export interface HeadingBlockData {

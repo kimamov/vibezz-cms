@@ -1,50 +1,72 @@
 package plugin
 
-import "sync"
+import (
+	"context"
+	"sync"
+
+	"github.com/vibezz/cms/internal/blocks"
+)
 
 var (
 	blockTypesMu   sync.RWMutex
-	blockTypes     []BlockTypeDefinition
 	blockEnrichers = make(map[string]BlockEnricher)
 )
 
-func registerBlockType(def BlockTypeDefinition) {
-	blockTypesMu.Lock()
-	defer blockTypesMu.Unlock()
-	blockTypes = append(blockTypes, def)
+// BlockTypeDefinition describes a block type available in the editor.
+type BlockTypeDefinition = blocks.BlockTypeDefinition
+
+// BlockFieldDefinition describes a field in a block type
+type BlockFieldDefinition = blocks.BlockFieldDefinition
+
+// BlockEnricher is a function that enriches block data for public rendering.
+// It receives the context and the raw block data map, and returns
+// the enriched data (which may include additional fields like resolved URLs,
+// hydrated relations, etc.).
+type BlockEnricher func(ctx context.Context, data map[string]interface{}) (map[string]interface{}, error)
+
+// GetAllBlockTypes returns all block type definitions including layout blocks
+func GetAllBlockTypes() []BlockTypeDefinition {
+	// Use the new blocks package registry
+	return blocks.GetBlockTypeDefinitions()
 }
 
+// GetBlockEnricher returns an enricher for a specific block type
+func GetBlockEnricher(slug string) BlockEnricher {
+	blockTypesMu.RLock()
+	defer blockTypesMu.RUnlock()
+
+	// Check if we have a custom enricher
+	if enricher, ok := blockEnrichers[slug]; ok {
+		return enricher
+	}
+
+	// Return default enricher
+	return defaultBlockEnricher
+}
+
+// defaultBlockEnricher returns data as-is
+func defaultBlockEnricher(ctx context.Context, data map[string]interface{}) (map[string]interface{}, error) {
+	return data, nil
+}
+
+// registerBlockType adds a block type to the registry
+func registerBlockType(def BlockTypeDefinition) {
+	blocks.RegisterBlockType(def)
+}
+
+// registerBlockEnricher adds a block enricher
 func registerBlockEnricher(slug string, enricher BlockEnricher) {
 	blockTypesMu.Lock()
 	defer blockTypesMu.Unlock()
 	blockEnrichers[slug] = enricher
 }
 
-// GetAllBlockTypes returns core block types plus plugin-registered ones.
-func GetAllBlockTypes() []BlockTypeDefinition {
-	blockTypesMu.RLock()
-	defer blockTypesMu.RUnlock()
-	core := coreBlockTypes()
-	out := make([]BlockTypeDefinition, 0, len(core)+len(blockTypes))
-	out = append(out, core...)
-	out = append(out, blockTypes...)
-	return out
+// IsContainerBlock checks if a block type can contain other blocks
+func IsContainerBlock(slug string) bool {
+	return blocks.IsContainerBlock(slug)
 }
 
-// GetBlockEnricher returns the enricher for a block type slug, or nil.
-func GetBlockEnricher(slug string) BlockEnricher {
-	blockTypesMu.RLock()
-	defer blockTypesMu.RUnlock()
-	return blockEnrichers[slug]
-}
-
-func coreBlockTypes() []BlockTypeDefinition {
-	return []BlockTypeDefinition{
-		{Slug: "heading", Label: "Heading", Icon: "i-heroicons-h1", DefaultData: map[string]interface{}{"text": "", "level": float64(2)}},
-		{Slug: "text", Label: "Text", Icon: "i-heroicons-document-text", DefaultData: map[string]interface{}{"content": ""}},
-		{Slug: "image", Label: "Image", Icon: "i-heroicons-photo", DefaultData: map[string]interface{}{"media_id": "", "caption": "", "alt": ""}},
-		{Slug: "quote", Label: "Quote", Icon: "i-heroicons-chat-bubble-bottom-center-text", DefaultData: map[string]interface{}{"text": "", "attribution": ""}},
-		{Slug: "code", Label: "Code", Icon: "i-heroicons-code-bracket", DefaultData: map[string]interface{}{"code": "", "language": ""}},
-		{Slug: "divider", Label: "Divider", Icon: "i-heroicons-minus", DefaultData: map[string]interface{}{}},
-	}
+// GetBlockTypeDefinition returns a specific block type definition
+func GetBlockTypeDefinition(slug string) (BlockTypeDefinition, bool) {
+	return blocks.GetBlockTypeDefinition(slug)
 }

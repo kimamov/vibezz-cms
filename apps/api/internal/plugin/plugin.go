@@ -1,8 +1,6 @@
 package plugin
 
 import (
-	"context"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -25,18 +23,6 @@ type BlockConfigField struct {
 	Type     string `json:"type"` // text, number, boolean
 	Required bool   `json:"required"`
 }
-
-// BlockTypeDefinition describes a block that can be added to page content (core or plugin).
-type BlockTypeDefinition struct {
-	Slug        string             `json:"slug"`
-	Label       string             `json:"label"`
-	Icon        string             `json:"icon"`
-	ConfigFields []BlockConfigField `json:"config_fields,omitempty"`
-	DefaultData  map[string]interface{} `json:"default_data"`
-}
-
-// BlockEnricher enriches block data for public responses (e.g. fetches news items for news_list).
-type BlockEnricher func(ctx context.Context, data map[string]interface{}) (map[string]interface{}, error)
 
 // Plugin is the interface that custom plugins implement.
 type Plugin interface {
